@@ -1,8 +1,15 @@
 // need to leave this as renderer or something and let views extend from this
 var fs = require("fs");
+var routes = require("./../../config/router").routes;
 
 // GET curr_dir set elsewhere -- see top of conroller using render
 var curr_dir = './app/views/', ext = ".js.html";
+
+function link(text, hashy) {
+  for (var key in routes)
+    if (routes[key] === hashy) return '<a href="'+key+'">'+text+'</a>'; // url -> key
+  throw "Link hashy " + hashy + " is not valid";
+}
 
 function render(layout, embed, response) {
   var html = "";
@@ -14,13 +21,23 @@ function render(layout, embed, response) {
       response.end();
       return;
     }
-    html += data;
     // do some crazy expansion of {{_key}} from _key.js.html and make sure the expanded {{subkey$index}} goes up
     // the same size as the for loop it could be wrapped around... make sure the sub object with fields of
     // those var names has the same .size() as highest $index-1?
+    html += data;
+    // replace embed
     for (var key in embed) {
       html = html.replace(new RegExp("{{" + key + "}}", "g"), embed[key]);
     }
+    // replace links {{Hey there!}http://google.com}
+    var match = '';
+    while (match != undefined) {
+      match = html.match(/{{([^}]+)}([^}]+)}/);
+      console.log(require('util').inspect(match));
+      // RIGHT HEREEEEEE
+      //html = html.replace(new RegExp("{{("+
+    }
+    // return HTML
     response.writeHead(200, {"Content-Type":"text/html"});
     response.write(html);
     response.end();

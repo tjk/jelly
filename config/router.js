@@ -5,7 +5,7 @@ var controller, action;
 
 var routes = {};
 // TODO - PUT ROUTES ELSEWHERE TO ADD TO EASILY
-routes[""] = ""; // "ACTION=index#CONTROLLER=index"
+routes[""] = ""; // A 'hashy' -> "ACTION=index#CONTROLLER=index"
 routes["/"] = "";
 routes["/admin"] = "admin";
 
@@ -35,4 +35,6 @@ function route(request, response, post) {
   }
 }
 
+// export routes
+exports.routes = routes;
 exports.route = route;
