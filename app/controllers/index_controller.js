@@ -3,7 +3,7 @@
 var render = require("./../views/renderer").render;
 
 function index(response) {
-  var embed = {"title":"tjk.me"};
+  var embed = { "title" : "tjk.me" };
   render("main", embed, response);
 }
 

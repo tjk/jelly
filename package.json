@@ -1,0 +1,17 @@
+{
+  "name": "jsail",
+  "description": "A Ruby on Rails inspired web framework",
+  "version": "0.1",
+  "author": "TJ Koblentz <tjk.me>",
+  "contributors": [
+    { "name": "TJ Koblentz", "email": "tj@tjk.me" }
+  ],
+  "dependencies": {
+    "mongodb": ">= 0.0.1"
+  },
+  "keywords": [ "framework", "rails", "web", "node" ],
+  "repository": "git://github.com/tjko/jsail",
+  "main": "index",
+  "bin": { "jsail": "./bin/jsail" },
+  "engines": { "node": ">= 0.0.1" }
+}

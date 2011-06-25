@@ -1,5 +1,5 @@
-var http = require("http");
-var router = require("./config/router");
+var http = require("http"),
+    router = require("./config/router");
 
 function start(port) {
   function onRequest(request, response) {
@@ -8,10 +8,10 @@ function start(port) {
     request.setEncoding("utf8");
     request.addListener("data", function(chunk) {
       post += chunk;
-    });
+    })
     request.addListener("end", function() {
       router.route(request, response, post);
-    });
+    })
   }
   http.createServer(onRequest).listen(port);
   console.log("Server started.");
