@@ -1,5 +1,5 @@
 {
-  "name": "jsail",
+  "name": "jails",
   "description": "A Ruby on Rails inspired web framework",
   "version": "0.1",
   "author": "TJ Koblentz <tjk.me>",
@@ -10,8 +10,8 @@
     "mongodb": ">= 0.0.1"
   },
   "keywords": [ "framework", "rails", "web", "node" ],
-  "repository": "git://github.com/tjko/jsail",
+  "repository": "git://github.com/tjko/jails",
   "main": "index",
-  "bin": { "jsail": "./bin/jsail" },
+  "bin": { "jails": "./bin/jails" },
   "engines": { "node": ">= 0.0.1" }
 }

@@ -3,20 +3,32 @@
 var fs = require("fs"),
     exec = require("child_process").exec;
 
-var version = "0.1";
+  var version = "0.0.1"
+    , app_path;
 
-var template_engine = "jade" /* default */
-  , app_name;
+  /* default engines */
+  var template_engine = "jade"
+    , supported_template_engines = [ "jade" ]
+    , database_engine = "mongodb"
+    , supported_database_engines = [ "mongodb" ];
 
-var usage = [
-    ""
-  , "  Usage: jails [command] app_name [options]"
-  , ""
-  , "  Options:"
+  var usage = [
+      ""
+    , "  Usage: jails <command> [app_path] [options]"
+    , ""
+    , "  Commands:"
+    , "    new <app_path>           create a new jails application at app_path"
+    , "    s, server                start node server for current jails application"
+    , ""
+    , "  Options:"
+    , "    -d, --database <engine>  select database engine (mongodb|...). default=mongodb"
   , "    -t, --template <engine>  select template engine (jade|...). default=jade"
   , "    -v, --version            output framework version"
-  , "    -h, --help               out help information"
+  , "    -h, --help               output help information"
+  , ""
 ].join("\n");
+
+var readme = "*empty*";
 
 var jade_layout = [
     "!!!"
@@ -32,10 +44,20 @@ var css = "/* this isn't a css framework! =] */\n";
 var app = [
     "var jails = require(\"jails\");"
   , ""
-  , "var app = module.exports = jails.createServer();"
+  , "var app = module.exports = jails.create_server();"
   , ""
   , "app.listen(3000);"
   , "console.log(\"Listening on port %d\", app.address().port);"
+  , ""
+].join("\n");
+
+var routes = [
+    "var router = require(\"jails\").router;"
+  , ""
+  , "{"
+  , "  \"/\": \"root\""
+  , ", \"/index\": \"root\""
+  , "}"
   , ""
 ].join("\n");
 
@@ -47,14 +69,36 @@ while (args.length) {
   switch (arg) {
     /* list commands */
     case "new":
-      cmd = create_app;
+      cmd = new_app;
+      args.length
+        ? (app_path = args.shift())
+        : abort("Missing required parameter: app_path.");
+      break;
+    case "server":
+    case "s":
+      cmd = start_server; // only if in jails dir
+      break;
+    case "-d":
+    case "--database":
+      if (args.length) {
+        database_engine = args.shift();
+        if (supported_database_engines.indexOf(database_engine) == -1) {
+          abort("Unsupported database engine: " + database_engine + ".");
+        }
+      } else {
+        abort("Missing required parameter: database <engine>.");
+      }
       break;
     case "-t":
     case "--template":
-      // TODO -- check that it is in supported list
-      args.length
-        ? (template_engine = args.shift())
-        : abort("template <engine> required");
+      if (args.length) {
+        template_engine = args.shift();
+        if (supported_template_engines.indexOf(template_engine) == -1) {
+          abort("Unsupported template engine: " + template_engine + ".");
+        }
+      } else {
+        abort("Missing required parameter: template <engine>.");
+      }
       break;
     case "-v":
     case "--version":
@@ -67,8 +111,93 @@ while (args.length) {
   }
 }
 
-var create_app = function() {
+function start_server() {
+  exec("node app.js", function(err, stdout, sterr) {
+    if (err) throw err;
+    // TODO -- check this is right (no need to dup)
+    process.stdout = stdout;
+    process.stderr = stderr;
+  });
+}
 
+function new_app() {
+  fs.readdir(app_path, function(err, files) {
+    err // file doesn't exist, proceed
+      ? create_app()
+      : confirm("A jails app exists in this directory, continue? ", function(yes) {
+          if (yes) {
+            process.stdin.destroy();
+            create_app();
+          } else {
+            abort("Aborting.");
+          }
+        });
+  });
+}
+
+function create_app() {
+  mkdir(app_path, function() {
+    write(app_path + "/README", readme);
+    // TODO -- make a Jakefile? haha
+    mkdir(app_path + "/app/controllers");
+    mkdir(app_path + "/app/helpers");
+    mkdir(app_path + "/app/models");
+    mkdir(app_path + "/app/views", function() {
+      mkdir(app_path + "/app/views/layouts", function() {
+        switch (template_engine) {
+        case "jade":
+          write(app_path + "/app/views/layouts/application.jade", jade_layout);
+          break;
+        }
+      });
+    });
+    mkdir(app_path + "/config");
+    write(app_path + "/config/routes.js", routes);
+    mkdir(app_path + "/db");
+    // TODO -- make db stuff
+    mkdir(app_path + "/public");
+    // TODO -- make these strings above
+    //write(app_path + "/public/index.html", index);
+    //write(app_path + "/public/404.html", four04);
+    mkdir(app_path + "/public/javascripts");
+    mkdir(app_path + "/public/stylesheets");
+    // TODO -- put anything in node modules?
+    mkdir(app_path + "/node_modules");
+    write(app_path + "/app.js", app)
+  });
+}
+
+function confirm(msg, fn) {
+  prompt(msg, "n", function(input) {
+    fn(/^ *y(es)?/i.test(input));
+  });
+}
+
+function prompt(msg, defaults, fn) {
+  process.stdout.write(msg + "[" + defaults + "] ");
+  process.stdin.resume();
+  process.stdin.setEncoding("ascii"); // do this every time?
+  process.stdin.once("data", function(data) {
+    fn(data || defaults);
+  });
+}
+
+function mkdir(path, fn) {
+  exec("mkdir -p "+path, function(err) {
+    if (err) throw err;
+    console.log("   \x1b[32m\x1b[1mcreate\x1b[0m    " + path)
+    fn && fn();
+  });
+}
+
+function write(path, content) {
+  fs.writeFile(path, content);
+  console.log("   \x1b[32mcreate\x1b[0m    " + path)
+}
+
+function abort(message) {
+  console.error(message);
+  process.exit(1);
 }
 
 if (cmd === undefined) {
