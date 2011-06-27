@@ -46,19 +46,17 @@ var app = [
   , ""
   , "var app = module.exports = jails.create_server();"
   , ""
+  , "app.routes(\"config/routes.json\")"
   , "app.listen(3000);"
   , "console.log(\"Listening on port %d\", app.address().port);"
   , ""
 ].join("\n");
 
 var routes = [
-    "var router = require(\"jails\").router;"
-  , ""
-  , "{"
-  , "  \"/\": \"root\""
-  , ", \"/index\": \"root\""
+    "{"
+  , "  \"/\": \"root\","
+  , "  \"/index\": \"root\""
   , "}"
-  , ""
 ].join("\n");
 
 var args = process.argv.slice(2)
@@ -152,7 +150,7 @@ function create_app() {
       });
     });
     mkdir(app_path + "/config");
-    write(app_path + "/config/routes.js", routes);
+    write(app_path + "/config/routes.json", routes);
     mkdir(app_path + "/db");
     // TODO -- make db stuff
     mkdir(app_path + "/public");
