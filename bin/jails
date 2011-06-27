@@ -46,7 +46,7 @@ var app = [
   , ""
   , "var app = new jails(__dirname);"
   , ""
-  , "app.bootstrap()"
+  , "app.bootstrap();"
   , "app.start(3000);"
   , "console.log(\"Listening on port 3000\");"
   , ""
@@ -54,6 +54,7 @@ var app = [
 
 var routes = [
     "{"
+  , "  \"\": \"root\","
   , "  \"/\": \"root\","
   , "  \"/index\": \"root\""
   , "}"
@@ -149,8 +150,9 @@ function create_app() {
         }
       });
     });
-    mkdir(app_path + "/config");
-    write(app_path + "/config/routes.json", routes);
+    mkdir(app_path + "/config", function() {
+      write(app_path + "/config/routes.json", routes);
+    });
     mkdir(app_path + "/db");
     // TODO -- make db stuff
     mkdir(app_path + "/public");
