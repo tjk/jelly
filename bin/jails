@@ -44,11 +44,11 @@ var css = "/* this isn't a css framework! =] */\n";
 var app = [
     "var jails = require(\"jails\");"
   , ""
-  , "var app = module.exports = jails.create_server();"
+  , "var app = new jails(__dirname);"
   , ""
-  , "app.routes(\"config/routes.json\")"
-  , "app.listen(3000);"
-  , "console.log(\"Listening on port %d\", app.address().port);"
+  , "app.bootstrap()"
+  , "app.start(3000);"
+  , "console.log(\"Listening on port 3000\");"
   , ""
 ].join("\n");
 
