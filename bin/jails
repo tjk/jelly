@@ -3,25 +3,27 @@
 var fs = require("fs"),
     exec = require("child_process").exec;
 
-  var version = "0.0.1"
-    , app_path;
+var version = "0.0.1"
+  , app_path;
 
-  /* default engines */
-  var template_engine = "jade"
-    , supported_template_engines = [ "jade" ]
-    , database_engine = "mongodb"
-    , supported_database_engines = [ "mongodb" ];
+/* default engines */
+var template_engine = "jade"
+  , supported_template_engines = [ "jade" ]
+  , database_engine = "mongodb"
+  , supported_database_engines = [ "mongodb" ]
+  , generators = [ "model", "controller", "view", "migration" ];
 
-  var usage = [
-      ""
-    , "  Usage: jails <command> [app_path] [options]"
-    , ""
-    , "  Commands:"
-    , "    new <app_path>           create a new jails application at app_path"
-    , "    s, server                start node server for current jails application"
-    , ""
-    , "  Options:"
-    , "    -d, --database <engine>  select database engine (mongodb|...). default=mongodb"
+var usage = [
+    ""
+  , "  Usage: jails <command> [app_path] [options]"
+  , ""
+  , "  Commands:"
+  , "    new <app_path>           create a new jails application at app_path"
+  , "    s, server                start node server for current jails application"
+  , "    g, generate              utilities for generating various types of modules"
+  , ""
+  , "  Options:"
+  , "    -d, --database <engine>  select database engine (mongodb|...). default=mongodb"
   , "    -t, --template <engine>  select template engine (jade|...). default=jade"
   , "    -v, --version            output framework version"
   , "    -h, --help               output help information"
@@ -39,6 +41,25 @@ var jade_layout = [
   , "  body!= body"
 ].join("\n");
 
+var index_html = [
+    "<!DOCTYPE html>"
+  , "<html>"
+  , "<head>"
+  , "  <title>Jails default index.html</title>"
+  , "</head>"
+  , "<body>"
+  , "  <h1>Jails default index.html</h1>"
+  , "  <p>Here are some things you should do to get started really quickly:</p>"
+  , "  <ul>"
+  , "    <li>Use built-in generators to develop quickly -- ex: <code>jails generate controller post index new edit</code>.</li>"
+  , "    <li>Check <code>APP_NAME/config/routes.json</code> frequently or type <code>jake routes</code> to check what the Jails router tries to route various URLs to.</li>"
+  , "    <li>Check out the <code>README.md</code> file or go to <a href=\"#\">http://github.com/tjko/jails</a> for more info.</li>"
+  , "  </ul>"
+  , "<p>Of course, deleting this file is a good idea! (<code>APP_NAME/public/index.html</code>)</p>"
+  , "</body>"
+  , "</html>"
+].join("\n");
+
 var css = "/* this isn't a css framework! =] */\n";
 
 var app = [
@@ -46,37 +67,57 @@ var app = [
   , ""
   , "var app = new jails(__dirname);"
   , ""
-  , "app.bootstrap();"
-  , "app.start(3000);"
-  , "console.log(\"Listening on port 3000\");"
+  , "app.bootstrap(function () {"
+  , "  app.start(3000);"
+  , "  console.log(\"Listening on port 3000\");"
+  , "});"
   , ""
 ].join("\n");
 
-var routes = [
-    "{"
-  , "  \"\": \"root\","
-  , "  \"/\": \"root\","
-  , "  \"/index\": \"root\""
-  , "}"
-].join("\n");
+var routes = "{\n}\n";
 
 var args = process.argv.slice(2)
   , cmd;
 
 while (args.length) {
-  var arg = args.shift();
+  var generator, arg = args.shift();
   switch (arg) {
-    /* list commands */
+    /* OUT-DIR COMMAND */
     case "new":
       cmd = new_app;
       args.length
         ? (app_path = args.shift())
         : abort("Missing required parameter: app_path.");
       break;
+    /* all command below must be executed in jails app directory */
+    /* IN-DIR COMMANDS START ----------------------------------- */
     case "server":
     case "s":
-      cmd = start_server; // only if in jails dir
+      cmd = start_server;
       break;
+    case "generate":
+    case "g":
+      if (args.length) {
+        generator = args.shift();
+        if (generators.indexOf(generator) == -1) {
+          abort("The generator does not exist: " + generator + ".");
+        } else {
+          /* valid generator -- shift as many accepted args as possible */
+          /* examples:
+           *   generate model model_name attr_1:type_1 attr_2:type_2 ...
+           *   generate controller controller_name action_1 action_2 ...
+           *   generate view view_folder view_name_1 view_name_2 ...
+           *   generate migration migration_name attr_1 attr_2 ...
+           */
+          // TODO -- USE THE GENERATOR
+          cmd = generator;
+        }
+      } else {
+        abort("Missing required parameter: generator.");
+      }
+      break;
+    /* IN-DIR COMMANDS END ------------------------------------- */
+    /* Options START */
     case "-d":
     case "--database":
       if (args.length) {
@@ -113,9 +154,7 @@ while (args.length) {
 function start_server() {
   exec("node app.js", function(err, stdout, sterr) {
     if (err) throw err;
-    // TODO -- check this is right (no need to dup)
-    process.stdout = stdout;
-    process.stderr = stderr;
+    // TODO -- redirect stdout + stderr to parent's stdout + stderr!
   });
 }
 
@@ -137,7 +176,6 @@ function new_app() {
 function create_app() {
   mkdir(app_path, function() {
     write(app_path + "/README", readme);
-    // TODO -- make a Jakefile? haha
     mkdir(app_path + "/app/controllers");
     mkdir(app_path + "/app/helpers");
     mkdir(app_path + "/app/models");
@@ -155,16 +193,26 @@ function create_app() {
     });
     mkdir(app_path + "/db");
     // TODO -- make db stuff
-    mkdir(app_path + "/public");
-    // TODO -- make these strings above
-    //write(app_path + "/public/index.html", index);
-    //write(app_path + "/public/404.html", four04);
-    mkdir(app_path + "/public/javascripts");
-    mkdir(app_path + "/public/stylesheets");
-    // TODO -- put anything in node modules?
+    // schema.json ? + /db/migrations/
+    mkdir(app_path + "/logs", function() {
+      write(app_path + "/logs/access.log", "");
+
+    });
+    mkdir(app_path + "/public", function() {
+      write(app_path + "/public/index.html", index_html);
+      // TODO -- make the strings above
+      //write(app_path + "/public/404.html", four04);
+      mkdir(app_path + "/public/javascripts");
+      mkdir(app_path + "/public/stylesheets");
+    });
+    // TODO -- put anything in node modules? -- ship with jade and default db engine?
     mkdir(app_path + "/node_modules");
     write(app_path + "/app.js", app)
   });
+}
+
+function generate() {
+  // TODO -- figure out to pass generator as param or what
 }
 
 function confirm(msg, fn) {
