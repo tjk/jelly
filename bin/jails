@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+// do the following:
+// 1. export PATH=PATH_TO_JAILS/jails:$PATH
+// AND either -
+// 2a. alias j=jails (in .profile, .bash_profile, .bashrc, or appropriate) OR
+// 2b. ln jails j
+
 var fs = require("fs"),
     exec = require("child_process").exec;
 
@@ -10,8 +16,7 @@ var version = "0.0.1"
 var template_engine = "jade"
   , supported_template_engines = [ "jade" ]
   , database_engine = "mongodb"
-  , supported_database_engines = [ "mongodb" ]
-  , generators = [ "model", "controller", "view", "migration" ];
+  , supported_database_engines = [ "mongodb" ];
 
 var usage = [
     ""
@@ -76,44 +81,54 @@ var app = [
 
 var routes = "{\n}\n";
 
+var gen_controller = function(name, actions) {
+  var content = [
+      // TODO -- check this next line is correct!!
+      name + ".prototype.__proto__ = jails.controller;" // jails not in scope
+    , ""
+    , "function " + name + "() {\n"
+    , ""
+  ].join("\n");
+  actions.forEach(function(val, index, arr) {
+    content += "  this." + val + " = function(ARGS) {\n\n  };\n\n";
+  });
+  content += "}\n";
+  // TODO -- jails.controllers_dir not supported!!! binary versus jails object...
+  write("app/controllers/" + name + ".js", content);
+};
+
 var args = process.argv.slice(2)
-  , cmd;
+  , cmd, generator, arg;
 
 while (args.length) {
-  var generator, arg = args.shift();
+  arg = args.shift();
   switch (arg) {
     /* OUT-DIR COMMAND */
     case "new":
-      cmd = new_app;
       args.length
-        ? (app_path = args.shift())
+        ? new_app(args.shift())
         : abort("Missing required parameter: app_path.");
       break;
     /* all command below must be executed in jails app directory */
     /* IN-DIR COMMANDS START ----------------------------------- */
     case "server":
     case "s":
-      cmd = start_server;
+      start_server();
+      // TODO -- may have options after like --port or something?
       break;
     case "generate":
     case "g":
       if (args.length) {
-        generator = args.shift();
-        if (generators.indexOf(generator) == -1) {
-          abort("The generator does not exist: " + generator + ".");
-        } else {
-          /* valid generator -- shift as many accepted args as possible */
-          /* examples:
-           *   generate model model_name attr_1:type_1 attr_2:type_2 ...
-           *   generate controller controller_name action_1 action_2 ...
-           *   generate view view_folder view_name_1 view_name_2 ...
-           *   generate migration migration_name attr_1 attr_2 ...
-           */
-          // TODO -- USE THE GENERATOR
-          cmd = generator;
-        }
+        /* examples:
+         *   generate model model_name attr_1:type_1 attr_2:type_2 ...
+         *   generate controller controller_name action_1 action_2 ...
+         *   generate view view_folder view_name_1 view_name_2 ...
+         *   generate migration migration_name attr_1 attr_2 ...
+         */
+        generate(args.shift(), args);
+        args.length = 0;
       } else {
-        abort("Missing required parameter: generator.");
+        abort("Missing required parameter: generator_type.");
       }
       break;
     /* IN-DIR COMMANDS END ------------------------------------- */
@@ -126,7 +141,7 @@ while (args.length) {
           abort("Unsupported database engine: " + database_engine + ".");
         }
       } else {
-        abort("Missing required parameter: database <engine>.");
+        abort("Missing required parameter: database_engine.");
       }
       break;
     case "-t":
@@ -137,7 +152,7 @@ while (args.length) {
           abort("Unsupported template engine: " + template_engine + ".");
         }
       } else {
-        abort("Missing required parameter: template <engine>.");
+        abort("Missing required parameter: template_engine.");
       }
       break;
     case "-v":
@@ -158,10 +173,10 @@ function start_server() {
   });
 }
 
-function new_app() {
+function new_app(app_path) {
   fs.readdir(app_path, function(err, files) {
     err // file doesn't exist, proceed
-      ? create_app()
+      ? create_app(app_path)
       : confirm("A jails app exists in this directory, continue? ", function(yes) {
           if (yes) {
             process.stdin.destroy();
@@ -173,7 +188,7 @@ function new_app() {
   });
 }
 
-function create_app() {
+function create_app(app_path) {
   mkdir(app_path, function() {
     write(app_path + "/README", readme);
     mkdir(app_path + "/app/controllers");
@@ -211,8 +226,37 @@ function create_app() {
   });
 }
 
-function generate() {
-  // TODO -- figure out to pass generator as param or what
+function generate(generator, args) {
+  var next_param, buffer;
+  switch (generator) {
+    case "model":
+      console.log("unimplemented.");
+      break;
+    case "controller":
+      // TODO -- prompt about generating explicit routes
+      if (args.length) {
+        next_param = args.shift();
+        buffer = fs.readFileSync("app/controllers/" + next_param + ".js");
+        (buffer)
+          ? confirm("This controller already exists. continue? ", function(yes) {
+              if (yes) {
+                process.stdin.destroy();
+                gen_controller(next_param, args)
+              } else {
+                abort("Aborting.");
+              }
+          })
+          : gen_controller(next_param, args);
+      } else {
+        abort("Missing required parameter: controller_name.");
+      }
+      break;
+    case "migration":
+      console.log("unimplemented.");
+      break;
+    default:
+      abort("The generator does not exist: " + generator + ".");
+  }
 }
 
 function confirm(msg, fn) {
@@ -246,10 +290,4 @@ function write(path, content) {
 function abort(message) {
   console.error(message);
   process.exit(1);
-}
-
-if (cmd === undefined) {
-  abort(usage);
-} else if (typeof cmd === "function") {
-  cmd();
 }
