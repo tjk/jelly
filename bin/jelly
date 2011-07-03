@@ -95,7 +95,7 @@ var gen_controller = function(controller_name, action_names) {
   action_names.forEach(function(val, index, arr) {
     content += "  this." + val + " = function(res) {\n    this.render(res, {\n\n    });\n  };\n\n";
   });
-  content += "}\n\nvar expose = new " + controller_name + "();\nexpose.__proto__ = global.app.base_controller;\nmodule.exports = expose;\n";
+  content += "}\n\nvar expose = new " + controller_name + "();\nexpose.__proto__ = app.base_controller;\nmodule.exports = expose;\n";
   // TODO -- jelly.controllers_dir not supported!!! binary versus jelly object...
   write("app/controllers/" + controller_name + ".js", content);
 };
