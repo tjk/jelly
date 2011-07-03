@@ -6,8 +6,9 @@
 // 2a. alias j=jails (in .profile, .bash_profile, .bashrc, or appropriate) OR
 // 2b. ln jails j
 
-var fs = require("fs"),
-    exec = require("child_process").exec;
+var fs = require("fs")
+  , spawn = require("child_process").spawn
+  , path = require("path");
 
 var version = "0.0.1"
   , app_path;
@@ -30,12 +31,18 @@ var usage = [
   , "  Options:"
   , "    -d, --database <engine>  select database engine (mongodb|...). default=mongodb"
   , "    -t, --template <engine>  select template engine (jade|...). default=jade"
-  , "    -v, --version            output framework version"
-  , "    -h, --help               output help information"
+  , "    -v, --version            show jails version number and quit"
+  , "    -h, --help               show this help message and quit"
   , ""
 ].join("\n");
 
-var readme = "*empty*";
+var readme = "*empty*" // TODO -- make something like Rails README
+  , robots = [
+      "# See http://www.robotstxt.org/wc/norobots.html for documentation on how to use the robots.txt file"
+    , "# To ban all spiders from the entire site uncomment the next two lines:"
+    , "# User-Agent: *"
+    , "# Disallow: /"
+  ].join("\n");
 
 var jade_layout = [
     "!!!"
@@ -60,7 +67,7 @@ var index_html = [
   , "    <li>Check <code>APP_NAME/config/routes.json</code> frequently or type <code>jake routes</code> to check what the Jails router tries to route various URLs to.</li>"
   , "    <li>Check out the <code>README.md</code> file or go to <a href=\"#\">http://github.com/tjko/jails</a> for more info.</li>"
   , "  </ul>"
-  , "<p>Of course, deleting this file is a good idea! (<code>APP_NAME/public/index.html</code>)</p>"
+  , "<p>Of course, deleting this file is a good start! (<code>APP_NAME/public/index.html</code>)</p>"
   , "</body>"
   , "</html>"
 ].join("\n");
@@ -68,11 +75,9 @@ var index_html = [
 var css = "/* this isn't a css framework! =] */\n";
 
 var app = [
-    "var jails = require(\"jails\");"
+    "app = require(\"jails\");"
   , ""
-  , "var app = new jails(__dirname);"
-  , ""
-  , "app.bootstrap(function () {"
+  , "app.bootstrap(__dirname, function () {"
   , "  app.start(3000);"
   , "  console.log(\"Listening on port 3000\");"
   , "});"
@@ -81,24 +86,27 @@ var app = [
 
 var routes = "{\n}\n";
 
-var gen_controller = function(name, actions) {
+var gen_controller = function(controller_name, action_names) {
   var content = [
-      // TODO -- check this next line is correct!!
-      name + ".prototype.__proto__ = jails.controller;" // jails not in scope
-    , ""
-    , "function " + name + "() {\n"
+      "function " + controller_name + "() {\n"
     , ""
   ].join("\n");
-  actions.forEach(function(val, index, arr) {
-    content += "  this." + val + " = function(ARGS) {\n\n  };\n\n";
+  action_names.forEach(function(val, index, arr) {
+    content += "  this." + val + " = function(res) {\n    this.render(res, {\n\n    });\n  };\n\n";
   });
-  content += "}\n";
+  content += "}\n\nvar expose = new " + controller_name + "();\nexpose.__proto__ = global.app.base_controller;\nmodule.exports = expose;\n";
   // TODO -- jails.controllers_dir not supported!!! binary versus jails object...
-  write("app/controllers/" + name + ".js", content);
+  write("app/controllers/" + controller_name + ".js", content);
+};
+
+var gen_routes = function(controller_name, actions_names) {
+// TODO -- just make "/controller_name/action_name": "controller_name#action_name"
 };
 
 var args = process.argv.slice(2)
   , cmd, generator, arg;
+
+if (args.length == 0) abort(usage);
 
 while (args.length) {
   arg = args.shift();
@@ -157,7 +165,7 @@ while (args.length) {
       break;
     case "-v":
     case "--version":
-      abort(version);
+      abort("Jails " + version);
       break;
     case "-h":
     case "--help":
@@ -167,9 +175,12 @@ while (args.length) {
 }
 
 function start_server() {
-  exec("node app.js", function(err, stdout, sterr) {
-    if (err) throw err;
-    // TODO -- redirect stdout + stderr to parent's stdout + stderr!
+  var node = spawn("node", ["app.js"]);
+  node.stdout.on("data", function(data) {
+    process.stdout.write(data.toString());
+  });
+  node.stderr.on("data", function(data) {
+    process.stderr.write(data.toString());
   });
 }
 
@@ -177,7 +188,8 @@ function new_app(app_path) {
   fs.readdir(app_path, function(err, files) {
     err // file doesn't exist, proceed
       ? create_app(app_path)
-      : confirm("A jails app exists in this directory, continue? ", function(yes) {
+      : confirm("A jails app exists in this directory, continue? ",
+        function(yes) {
           if (yes) {
             process.stdin.destroy();
             create_app();
@@ -198,7 +210,7 @@ function create_app(app_path) {
       mkdir(app_path + "/app/views/layouts", function() {
         switch (template_engine) {
         case "jade":
-          write(app_path + "/app/views/layouts/application.jade", jade_layout);
+          write(app_path + "/app/views/layouts/app.jade", jade_layout);
           break;
         }
       });
@@ -209,14 +221,15 @@ function create_app(app_path) {
     mkdir(app_path + "/db");
     // TODO -- make db stuff
     // schema.json ? + /db/migrations/
-    mkdir(app_path + "/logs", function() {
-      write(app_path + "/logs/access.log", "");
-
+    mkdir(app_path + "/log", function() {
+      write(app_path + "/log/access.log", "");
     });
     mkdir(app_path + "/public", function() {
-      write(app_path + "/public/index.html", index_html);
-      // TODO -- make the strings above
       //write(app_path + "/public/404.html", four04);
+      write(app_path + "/public/index.html", index_html);
+      write(app_path + "/public/robots.txt", robots);
+      // TODO -- make the strings above
+      mkdir(app_path + "/public/images");
       mkdir(app_path + "/public/javascripts");
       mkdir(app_path + "/public/stylesheets");
     });
@@ -227,7 +240,7 @@ function create_app(app_path) {
 }
 
 function generate(generator, args) {
-  var next_param, buffer;
+  var next_param, exists;
   switch (generator) {
     case "model":
       console.log("unimplemented.");
@@ -236,17 +249,20 @@ function generate(generator, args) {
       // TODO -- prompt about generating explicit routes
       if (args.length) {
         next_param = args.shift();
-        buffer = fs.readFileSync("app/controllers/" + next_param + ".js");
-        (buffer)
-          ? confirm("This controller already exists. continue? ", function(yes) {
+        exists = path.existsSync("app/controllers/" + next_param + ".js");
+        (exists)
+          ? confirm("This controller already exists. continue? ",
+            function(yes) {
               if (yes) {
                 process.stdin.destroy();
                 gen_controller(next_param, args)
               } else {
                 abort("Aborting.");
               }
-          })
+            })
           : gen_controller(next_param, args);
+        // TODO -- if we're here -- we generate controller successfully, now generate routes?
+        gen_routes(next_param, args);
       } else {
         abort("Missing required parameter: controller_name.");
       }
