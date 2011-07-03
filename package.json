@@ -6,7 +6,7 @@
   "homepage": "http://github.com/tjko/jelly",
   "repository": {
     "type": "git",
-    "url": "git://github.com/tjko/jelly.git"
+    "url": "git://github.com/tjko/Jelly.git"
   },
   "main": "index.js",
   "engines": {
