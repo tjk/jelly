@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 // do the following:
-// 1. export PATH=PATH_TO_JAILS/jails:$PATH
+// 1. export PATH=PATH_TO_JELLY/jelly:$PATH
 // AND either -
-// 2a. alias j=jails (in .profile, .bash_profile, .bashrc, or appropriate) OR
-// 2b. ln jails j
+// 2a. alias j=jelly (in .profile, .bash_profile, .bashrc, or appropriate) OR
+// 2b. ln jelly j
 
 var fs = require("fs")
   , spawn = require("child_process").spawn
@@ -21,17 +21,17 @@ var template_engine = "jade"
 
 var usage = [
     ""
-  , "  Usage: jails <command> [app_path] [options]"
+  , "  Usage: jelly <command> [app_path] [options]"
   , ""
   , "  Commands:"
-  , "    new <app_path>           create a new jails application at app_path"
-  , "    s, server                start node server for current jails application"
+  , "    new <app_path>           create a new jelly application at app_path"
+  , "    s, server                start node server for current jelly application"
   , "    g, generate              utilities for generating various types of modules"
   , ""
   , "  Options:"
   , "    -d, --database <engine>  select database engine (mongodb|...). default=mongodb"
   , "    -t, --template <engine>  select template engine (jade|...). default=jade"
-  , "    -v, --version            show jails version number and quit"
+  , "    -v, --version            show jelly version number and quit"
   , "    -h, --help               show this help message and quit"
   , ""
 ].join("\n");
@@ -57,15 +57,15 @@ var index_html = [
     "<!DOCTYPE html>"
   , "<html>"
   , "<head>"
-  , "  <title>Jails default index.html</title>"
+  , "  <title>Jelly default index.html</title>"
   , "</head>"
   , "<body>"
-  , "  <h1>Jails default index.html</h1>"
+  , "  <h1>Jelly default index.html</h1>"
   , "  <p>Here are some things you should do to get started really quickly:</p>"
   , "  <ul>"
-  , "    <li>Use built-in generators to develop quickly -- ex: <code>jails generate controller post index new edit</code>.</li>"
-  , "    <li>Check <code>APP_NAME/config/routes.json</code> frequently or type <code>jake routes</code> to check what the Jails router tries to route various URLs to.</li>"
-  , "    <li>Check out the <code>README.md</code> file or go to <a href=\"#\">http://github.com/tjko/jails</a> for more info.</li>"
+  , "    <li>Use built-in generators to develop quickly -- ex: <code>jelly generate controller post index new edit</code>.</li>"
+  , "    <li>Check <code>APP_NAME/config/routes.json</code> frequently or type <code>jake routes</code> to check what the Jelly router tries to route various URLs to.</li>"
+  , "    <li>Check out the <code>README.md</code> file or go to <a href=\"#\">http://github.com/tjko/jelly</a> for more info.</li>"
   , "  </ul>"
   , "<p>Of course, deleting this file is a good start! (<code>APP_NAME/public/index.html</code>)</p>"
   , "</body>"
@@ -75,7 +75,7 @@ var index_html = [
 var css = "/* this isn't a css framework! =] */\n";
 
 var app = [
-    "app = require(\"jails\");"
+    "app = require(\"jelly\");"
   , ""
   , "app.bootstrap(__dirname, function () {"
   , "  app.start(3000);"
@@ -95,7 +95,7 @@ var gen_controller = function(controller_name, action_names) {
     content += "  this." + val + " = function(res) {\n    this.render(res, {\n\n    });\n  };\n\n";
   });
   content += "}\n\nvar expose = new " + controller_name + "();\nexpose.__proto__ = global.app.base_controller;\nmodule.exports = expose;\n";
-  // TODO -- jails.controllers_dir not supported!!! binary versus jails object...
+  // TODO -- jelly.controllers_dir not supported!!! binary versus jelly object...
   write("app/controllers/" + controller_name + ".js", content);
 };
 
@@ -117,7 +117,7 @@ while (args.length) {
         ? new_app(args.shift())
         : abort("Missing required parameter: app_path.");
       break;
-    /* all command below must be executed in jails app directory */
+    /* all command below must be executed in jelly app directory */
     /* IN-DIR COMMANDS START ----------------------------------- */
     case "server":
     case "s":
@@ -165,7 +165,7 @@ while (args.length) {
       break;
     case "-v":
     case "--version":
-      abort("Jails " + version);
+      abort("Jelly " + version);
       break;
     case "-h":
     case "--help":
@@ -188,7 +188,7 @@ function new_app(app_path) {
   fs.readdir(app_path, function(err, files) {
     err // file doesn't exist, proceed
       ? create_app(app_path)
-      : confirm("A jails app exists in this directory, continue? ",
+      : confirm("A jelly app exists in this directory, continue? ",
         function(yes) {
           if (yes) {
             process.stdin.destroy();

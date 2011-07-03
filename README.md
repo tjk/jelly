@@ -4,18 +4,18 @@ README
 Getting started
 ---------------
 
-### Installing jails from source
+### Installing Jelly from source
 
-    cd <where you want jails source>
+    cd <where you want the Jelly source>
     git clone GIT_URL
     make
     sudo make install
 
 ### Using npm -- [Node Package Manager](http://npmjs.org/)
 
-    npm install jails
+    npm install jelly
 
 License
 -------
 
-jails is licensed under [MIT license](./LICENSE.md).
+Jelly is licensed under [MIT license](./LICENSE.md).

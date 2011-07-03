@@ -1,12 +1,12 @@
 {
   "author": "TJ Koblentz <me@tjk.me> (http://tjk.me)",
-  "name": "jails",
+  "name": "Jelly",
   "description": "A web framework for Node based on Ruby on Rails.",
   "version": "0.0.3",
-  "homepage": "http://github.com/tjko/jails",
+  "homepage": "http://github.com/tjko/jelly",
   "repository": {
     "type": "git",
-    "url": "git://github.com/tjko/rails.git"
+    "url": "git://github.com/tjko/jelly.git"
   },
   "main": "index.js",
   "engines": {
