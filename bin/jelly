@@ -46,12 +46,12 @@ var readme = "*empty*" // TODO -- make something like Rails README
   ].join("\n");
 
 var jade_layout = [
-    "!!!"
+    "!!! 5"
   , "html"
   , "  head"
   , "    title= title"
   , "    link(rel=\"stylesheet\", href=\"/stylesheets/style.css\")"
-  , "  body!= body"
+  , "  body!= yield"
 ].join("\n");
 
 var index_html = [
@@ -76,10 +76,14 @@ var index_html = [
 var css = "/* this isn't a css framework! =] */\n";
 
 var app = [
-    "app = require(\"jelly\");"
+    "var connect = require(\"connect\");"
+  , "app = require(\"jelly\");"
   , ""
   , "app.bootstrap(__dirname, function () {"
-  , "  app.start(3000);"
+  , "  connect("
+  , "    connect.logger()"
+  , "  , app.router.setup()"
+  , "  ).listen(3000);"
   , "  console.log(\"Listening on port 3000\");"
   , "});"
   , ""
@@ -87,21 +91,24 @@ var app = [
 
 var routes = "{\n}\n";
 
+// TODO -- capitalize and append Controller to name?
 var gen_controller = function(controller_name, action_names) {
   var content = [
-      "function " + controller_name + "() {\n"
+      "function " + controller_name + "() {"
     , ""
   ].join("\n");
   action_names.forEach(function(val, index, arr) {
-    content += "  this." + val + " = function(res) {\n    this.render(res, {\n\n    });\n  };\n\n";
+    content += "  this." + val + " = function(res) {\n\n  };\n";
   });
   content += "}\n\nvar expose = new " + controller_name + "();\nexpose.__proto__ = app.base_controller;\nmodule.exports = expose;\n";
   // TODO -- jelly.controllers_dir not supported!!! binary versus jelly object...
+  // TODO -- check if there, otherwise warn we can't use generators
   write("app/controllers/" + controller_name + ".js", content);
 };
 
-var gen_routes = function(controller_name, actions_names) {
+var gen_routes = function(controller_name, actions) {
 // TODO -- just make "/controller_name/action_name": "controller_name#action_name"
+// json parse routes.json, TODO HERE
 };
 
 var args = process.argv.slice(2)
