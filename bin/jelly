@@ -92,18 +92,54 @@ var app = [
 var routes = "{\n}\n";
 
 // TODO -- capitalize and append Controller to name?
-var gen_controller = function(controller_name, action_names) {
-  var content = [
+var gen_controller = function(controller_name, actions) {
+  var controller_filename = "app/controllers/" + controller_name + ".js"
+    , content = [
       "function " + controller_name + "() {"
     , ""
   ].join("\n");
-  action_names.forEach(function(val, index, arr) {
+  actions.forEach(function(val, index, arr) {
     content += "  this." + val + " = function(res) {\n\n  };\n";
   });
   content += "}\n\nvar expose = new " + controller_name + "();\nexpose.__proto__ = app.base_controller;\nmodule.exports = expose;\n";
   // TODO -- jelly.controllers_dir not supported!!! binary versus jelly object...
-  // TODO -- check if there, otherwise warn we can't use generators
-  write("app/controllers/" + controller_name + ".js", content);
+  var actions = actions.slice() // keep actions in scope
+  path.exists(controller_filename, function(exists) {
+    if (exists) {
+      confirm("This controller already exists. continue? ", function(yes) {
+        if (yes) {
+          process.stdin.destroy();
+          write(controller_filename, content);
+          // TODO -- don't dup this next part (for confirm and not confirm)
+          /* generate routes for next controller AND/OR actions */
+          gen_routes(controller_name, args);
+          /* generate view folder and files */
+          mkdir("app/views/" + controller_name, function() {
+            // IMPORTANT TODO -- ACTIONS is out of scope here
+            actions.forEach(function(val, index, arr) {
+              // TODO -- based on templating system -- not just jade
+              write("app/views/" + controller_name + '/' + val + ".jade",
+                  "h2 " + controller_name + '#' + val);
+            });
+          });
+        } else {
+          abort("Aborting.");
+        }
+      });
+    } else {
+      write(controller_filename, content);
+      /* generate routes for next controller AND/OR actions */
+      gen_routes(controller_name, args);
+      /* generate view folder and files */
+      mkdir("app/views/" + controller_name, function() {
+        actions.forEach(function(val, index, arr) {
+          // TODO -- based on templating system -- not just jade
+          write("app/views/" + controller_name + '/' + val + ".jade",
+              "h2 " + controller_name + '#' + val);
+        });
+      });
+    }
+  });
 };
 
 var gen_routes = function(controller_name, actions) {
@@ -257,20 +293,7 @@ function generate(generator, args) {
       // TODO -- prompt about generating explicit routes
       if (args.length) {
         next_param = args.shift();
-        exists = path.existsSync("app/controllers/" + next_param + ".js");
-        (exists)
-          ? confirm("This controller already exists. continue? ",
-            function(yes) {
-              if (yes) {
-                process.stdin.destroy();
-                gen_controller(next_param, args)
-              } else {
-                abort("Aborting.");
-              }
-            })
-          : gen_controller(next_param, args);
-        // TODO -- if we're here -- we generate controller successfully, now generate routes?
-        gen_routes(next_param, args);
+        gen_controller(next_param, args);
       } else {
         abort("Missing required parameter: controller_name.");
       }
