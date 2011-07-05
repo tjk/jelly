@@ -104,41 +104,18 @@ var gen_controller = function(controller_name, actions) {
   content += "}\n\nvar expose = new " + controller_name + "();\nexpose.__proto__ = app.base_controller;\nmodule.exports = expose;\n";
   // TODO -- jelly.controllers_dir not supported!!! binary versus jelly object...
   var actions = actions.slice() // keep actions in scope
-  path.exists(controller_filename, function(exists) {
-    if (exists) {
-      confirm("This controller already exists. continue? ", function(yes) {
-        if (yes) {
-          process.stdin.destroy();
-          write(controller_filename, content);
-          // TODO -- don't dup this next part (for confirm and not confirm)
-          /* generate routes for next controller AND/OR actions */
-          gen_routes(controller_name, args);
-          /* generate view folder and files */
-          mkdir("app/views/" + controller_name, function() {
-            // IMPORTANT TODO -- ACTIONS is out of scope here
-            actions.forEach(function(val, index, arr) {
-              // TODO -- based on templating system -- not just jade
-              write("app/views/" + controller_name + '/' + val + ".jade",
-                  "h2 " + controller_name + '#' + val);
-            });
-          });
-        } else {
-          abort("Aborting.");
-        }
+  write(controller_filename, content, "This controller already exists. continue? ", function() {
+    /* generate routes for next controller AND/OR actions */
+    gen_routes(controller_name, args);
+    /* generate view folder and files */
+    mkdir("app/views/" + controller_name, function() {
+      // IMPORTANT TODO -- ACTIONS is out of scope here
+      actions.forEach(function(val, index, arr) {
+        // TODO -- based on templating system -- not just jade
+        write("app/views/" + controller_name + '/' + val + ".jade",
+            "h2 " + controller_name + '#' + val);
       });
-    } else {
-      write(controller_filename, content);
-      /* generate routes for next controller AND/OR actions */
-      gen_routes(controller_name, args);
-      /* generate view folder and files */
-      mkdir("app/views/" + controller_name, function() {
-        actions.forEach(function(val, index, arr) {
-          // TODO -- based on templating system -- not just jade
-          write("app/views/" + controller_name + '/' + val + ".jade",
-              "h2 " + controller_name + '#' + val);
-        });
-      });
-    }
+    });
   });
 };
 
@@ -329,9 +306,33 @@ function mkdir(path, fn) {
   });
 }
 
-function write(path, content) {
-  fs.writeFile(path, content);
-  console.log("   \x1b[32mcreate\x1b[0m    " + path)
+/* callback only offered with confirmation -- could check typeof */
+function write(write_path, content, confirmation, fn) {
+  /* param renamed write_path to avoid conflict with required path */
+  if (confirmation) {
+    path.exists(write_path, function(exists) {
+      if (exists) {
+        confirm(confirmation, function(yes) {
+          if (yes) {
+            process.stdin.destroy();
+            fs.writeFile(write_path, content);
+            console.log("   \x1b[32mcreate\x1b[0m    " + write_path);
+            if (fn) fn();
+          } else {
+            abort("Aborting.");
+          }
+        });
+      } else {
+        fs.writeFile(write_path, content)
+        console.log("   \x1b[32mcreate\x1b[0m    " + write_path);
+        if (fn) fn();
+      }
+    });
+  } else {
+    /* just force if no confirmation is specified */
+    fs.writeFile(write_path, content)
+    console.log("   \x1b[32mCREATE\x1b[0m    " + write_path);
+  }
 }
 
 function abort(message) {
