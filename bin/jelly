@@ -73,7 +73,10 @@ var index_html = [
   , "</html>"
 ].join("\n");
 
-var css = "/* this isn't a css framework! =] */\n";
+var css = [
+    "html {overflow-y: scroll}"
+  , "body {font-family: Verdana, 'Times New Roman'}"
+].join("\n");
 
 var app = [
     "var connect = require(\"connect\");"
@@ -93,13 +96,15 @@ var routes = "{\n}\n";
 
 // TODO -- capitalize and append Controller to name?
 var gen_controller = function(controller_name, actions) {
+  // TODO -- check we are in jelly app -- what makes a directory a jelly app??
   var controller_filename = "app/controllers/" + controller_name + ".js"
     , content = [
       "function " + controller_name + "() {"
     , ""
   ].join("\n");
   actions.forEach(function(val, index, arr) {
-    content += "  this." + val + " = function(res) {\n\n  };\n";
+    content += "  this." + val + " = function(res) {\n    return {\n      title: \"" +
+        controller_name + "#" + val + "\"\n    };\n  };\n";
   });
   content += "}\n\nvar expose = new " + controller_name + "();\nexpose.__proto__ = app.base_controller;\nmodule.exports = expose;\n";
   // TODO -- jelly.controllers_dir not supported!!! binary versus jelly object...
@@ -112,8 +117,9 @@ var gen_controller = function(controller_name, actions) {
       // IMPORTANT TODO -- ACTIONS is out of scope here
       actions.forEach(function(val, index, arr) {
         // TODO -- based on templating system -- not just jade
-        write("app/views/" + controller_name + '/' + val + ".jade",
-            "h2 " + controller_name + '#' + val);
+        var view_filename = "app/views/" + controller_name + '/' + val + ".jade";
+        write(view_filename, "h2 " + controller_name + '#' + val +
+            "\np Edit this file (" + view_filename + ").");
       });
     });
   });
@@ -259,7 +265,9 @@ function create_app(app_path) {
       // TODO -- make the strings above
       mkdir(app_path + "/public/images");
       mkdir(app_path + "/public/javascripts");
-      mkdir(app_path + "/public/stylesheets");
+      mkdir(app_path + "/public/stylesheets", function() {
+        write(app_path + "/public/stylesheets/style.css", css);
+      });
     });
     // TODO -- put anything in node modules? -- ship with jade and default db engine?
     mkdir(app_path + "/node_modules");
