@@ -106,7 +106,7 @@ var gen_controller = function(controller_name, actions) {
   var actions = actions.slice() // keep actions in scope
   write(controller_filename, content, "This controller already exists. continue? ", function() {
     /* generate routes for next controller AND/OR actions */
-    gen_routes(controller_name, args);
+    gen_routes(controller_name, actions);
     /* generate view folder and files */
     mkdir("app/views/" + controller_name, function() {
       // IMPORTANT TODO -- ACTIONS is out of scope here
@@ -120,8 +120,15 @@ var gen_controller = function(controller_name, actions) {
 };
 
 var gen_routes = function(controller_name, actions) {
-// TODO -- just make "/controller_name/action_name": "controller_name#action_name"
-// json parse routes.json, TODO HERE
+  var routes_json, routes_string, contents;
+  contents = fs.readFileSync("config/routes.json");
+  routes_json = JSON.parse(contents);
+  actions.forEach(function(val, index, arr) {
+    routes_json['/' + controller_name + '/' + val] = controller_name + '#' + val;
+  });
+  // error here some where
+  routes_string = JSON.stringify(routes_json);
+  write("config/routes.json", routes_string); // TODO -- change this to MODIFY
 };
 
 var args = process.argv.slice(2)
