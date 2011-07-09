@@ -59,6 +59,7 @@ var index_html = [
   , "<html>"
   , "<head>"
   , "  <title>Jelly default index.html</title>"
+  , "  <link rel=\"stylesheet\" href=\"/stylesheets/style.css\" type=\"text/css\" />"
   , "</head>"
   , "<body>"
   , "  <h1>Jelly default index.html</h1>"
@@ -119,11 +120,12 @@ var gen_controller = function(controller_name, actions) {
         // (maybe have Jelly.conf -- also show it's Jelly app?)
         switch (template_engine) {
 //case "jade":
-        case default:
+        default:
           var view_filename = "app/views/" + controller_name + '/' + val + ".jade";
           write(view_filename, "h2 " + controller_name + '#' + val +
               "\np Edit this file (" + view_filename + ").");
           break;
+        }
 //default:
 //abort("Unsupported template engine.");
       });
