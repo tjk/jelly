@@ -226,7 +226,7 @@ function new_app(app_path) {
         function(yes) {
           if (yes) {
             process.stdin.destroy();
-            create_app();
+            create_app(app_path);
           } else {
             abort("Aborting.");
           }
@@ -235,6 +235,7 @@ function new_app(app_path) {
 }
 
 function create_app(app_path) {
+  // TODO -- set appropriate permissions (public should be public, etc.)
   mkdir(app_path, function() {
     write(app_path + "/README", readme);
     mkdir(app_path + "/app/controllers");
@@ -262,15 +263,17 @@ function create_app(app_path) {
       //write(app_path + "/public/404.html", four04);
       write(app_path + "/public/index.html", index_html);
       write(app_path + "/public/robots.txt", robots);
-      // TODO -- make the strings above
       mkdir(app_path + "/public/images");
       mkdir(app_path + "/public/javascripts");
       mkdir(app_path + "/public/stylesheets", function() {
         write(app_path + "/public/stylesheets/style.css", css);
       });
     });
-    // TODO -- put anything in node modules? -- ship with jade and default db engine?
-    mkdir(app_path + "/node_modules");
+    // TODO -- put anything in node modules? -- ship with connect, jade, and default db engine?
+    mkdir(app_path + "/node_modules", function() {
+      // maybe exec npm in here -- do something about dependencies,
+      // unless package.json takes care of all this auto-magically
+    });
     write(app_path + "/app.js", app)
   });
 }
