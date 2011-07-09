@@ -96,7 +96,7 @@ var routes = "{\n}\n";
 
 // TODO -- capitalize and append Controller to name?
 var gen_controller = function(controller_name, actions) {
-  // TODO -- check we are in jelly app -- what makes a directory a jelly app??
+  // TODO -- check we are in jelly app -- what makes a directory a jelly app?? (see: /Jelly\.conf/)
   var controller_filename = "app/controllers/" + controller_name + ".js"
     , content = [
       "function " + controller_name + "() {"
@@ -114,12 +114,18 @@ var gen_controller = function(controller_name, actions) {
     gen_routes(controller_name, actions);
     /* generate view folder and files */
     mkdir("app/views/" + controller_name, function() {
-      // IMPORTANT TODO -- ACTIONS is out of scope here
       actions.forEach(function(val, index, arr) {
-        // TODO -- based on templating system -- not just jade
-        var view_filename = "app/views/" + controller_name + '/' + val + ".jade";
-        write(view_filename, "h2 " + controller_name + '#' + val +
-            "\np Edit this file (" + view_filename + ").");
+        // TODO -- need to get at app.options['template_engine'] or w/e !!!
+        // (maybe have Jelly.conf -- also show it's Jelly app?)
+        switch (template_engine) {
+//case "jade":
+        case default:
+          var view_filename = "app/views/" + controller_name + '/' + val + ".jade";
+          write(view_filename, "h2 " + controller_name + '#' + val +
+              "\np Edit this file (" + view_filename + ").");
+          break;
+//default:
+//abort("Unsupported template engine.");
       });
     });
   });
@@ -151,7 +157,7 @@ while (args.length) {
         ? new_app(args.shift())
         : abort("Missing required parameter: app_path.");
       break;
-    /* all command below must be executed in jelly app directory */
+    /* all command below must be executed in jelly app directory -- check for Jelly.conf ? */
     /* IN-DIR COMMANDS START ----------------------------------- */
     case "server":
     case "s":
@@ -220,22 +226,29 @@ function start_server() {
 
 function new_app(app_path) {
   fs.readdir(app_path, function(err, files) {
-    err // file doesn't exist, proceed
-      ? create_app(app_path)
-      : confirm("A jelly app exists in this directory, continue? ",
-        function(yes) {
-          if (yes) {
-            process.stdin.destroy();
+    if (err) create_app(app_path) // file doesn't exist, proceed
+    else {
+      confirm("A jelly app exists in this directory, continue? ",
+          function(yes) {
+        if (yes) {
+          process.stdin.destroy();
+          // TODO -- doesn't actually delete... is this okay?
+          exec("cp -R " + app_path + " ." + app_path + ".~ && rm -rf " + app_path, function(err) {
+            if (err) throw err;
+            console.log("   \x1b[31m\x1b[1mDELETE\x1b[0m    " + app_path)
             create_app(app_path);
-          } else {
-            abort("Aborting.");
-          }
-        });
+          });
+        } else {
+          abort("Aborting.");
+        }
+      });
+    }
   });
 }
 
 function create_app(app_path) {
   // TODO -- set appropriate permissions (public should be public, etc.)
+  // delete this directory
   mkdir(app_path, function() {
     write(app_path + "/README", readme);
     mkdir(app_path + "/app/controllers");
@@ -257,7 +270,7 @@ function create_app(app_path) {
     // TODO -- make db stuff
     // schema.json ? + /db/migrations/
     mkdir(app_path + "/log", function() {
-      write(app_path + "/log/access.log", "");
+      write(app_path + "/log/access.log", ""); // TODO -- write to this!
     });
     mkdir(app_path + "/public", function() {
       //write(app_path + "/public/404.html", four04);
