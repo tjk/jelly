@@ -249,8 +249,6 @@ function new_app(app_path) {
 }
 
 function create_app(app_path) {
-  // TODO -- set appropriate permissions (public should be public, etc.)
-  // delete this directory
   mkdir(app_path, function() {
     write(app_path + "/README", readme);
     mkdir(app_path + "/app/controllers");
