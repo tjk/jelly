@@ -79,17 +79,20 @@ var css = [
   , "body {font-family: Verdana, 'Times New Roman'}"
 ].join("\n");
 
+// TODO -- logger('dev') should work...
 var app = [
-    "var connect = require(\"connect\");"
+    "var connect = require(\"connect\")"
+  , "  , port = process.argv[2] || \"3000\""
+  , "  , env = process.argv[3] || \"dev\""
+  , "  , log_param = (env == \"dev\") ? 'dev' : undefined;"
   , "app = require(\"jelly\");"
   , ""
   , "app.bootstrap(__dirname, function () {"
   , "  connect("
-  , "    connect.logger()"
+  , "    connect.logger(/* log_param */)"
   , "  , app.router.setup()"
-  , "  ).listen(3000);"
-  , "  console.log(\"Listening on port 3000\");"
-  , "});"
+  , "  ).listen(port);"
+  , "}, env);"
   , ""
 ].join("\n");
 
@@ -163,8 +166,8 @@ while (args.length) {
     /* IN-DIR COMMANDS START ----------------------------------- */
     case "server":
     case "s":
-      start_server();
-      // TODO -- may have options after like --port or something?
+      start_server(args);
+      args.length = 0;
       break;
     case "generate":
     case "g":
@@ -216,8 +219,12 @@ while (args.length) {
   }
 }
 
-function start_server() {
-  var node = spawn("node", ["app.js"]);
+function start_server(args) {
+  var port = args[0] || "3000"
+    , env = args[1] || "dev";
+  var node = spawn("node", ["app.js", port, env]);
+  process.stdout.write("Jelly worker (pid " + node.pid +
+      ") running at port " + port + " (" + env + ")\n")
   node.stdout.on("data", function(data) {
     process.stdout.write(data.toString());
   });
