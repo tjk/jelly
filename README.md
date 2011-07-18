@@ -13,10 +13,6 @@ Getting started
     make
     sudo make install
 
-### Using npm -- [Node Package Manager](http://npmjs.org/)
-
-    npm install jelly
-
 License
 -------
 
