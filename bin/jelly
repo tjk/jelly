@@ -77,6 +77,7 @@ var index_html = [
 var css = [
     "html {overflow-y: scroll}"
   , "body {font-family: Verdana, 'Times New Roman'}"
+  , "#routes th, #routes td {border: 1px solid black; text-align: center; padding: 10px}"
 ].join("\n");
 
 // TODO -- logger('dev') should work...
