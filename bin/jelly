@@ -67,7 +67,7 @@ var index_html = [
   , "  <ul>"
   , "    <li>Use built-in generators to develop quickly -- ex: <code>jelly generate controller post index new edit</code>.</li>"
   , "    <li>Check <code>APP_NAME/config/routes.json</code> frequently or type <code>jake routes</code> to check what the Jelly router tries to route various URLs to.</li>"
-  , "    <li>Check out the <code>README.md</code> file or go to <a href=\"#\">http://github.com/tjko/jelly</a> for more info.</li>"
+  , "    <li>Check out the <code>README.md</code> file or go to <a href=\"https://github.com/tjko/Jelly\">http://github.com/tjko/Jelly</a> for more info.</li>"
   , "  </ul>"
   , "<p>Of course, deleting this file is a good start! (<code>APP_NAME/public/index.html</code>)</p>"
   , "</body>"
