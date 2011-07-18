@@ -145,7 +145,7 @@ var gen_routes = function(controller_name, actions) {
   });
   // error here some where
   routes_string = JSON.stringify(routes_json);
-  write("config/routes.json", routes_string); // TODO -- change this to MODIFY
+  write("config/routes.json", routes_string);
 };
 
 var args = process.argv.slice(2)
@@ -221,8 +221,8 @@ while (args.length) {
 
 function start_server(args) {
   var port = args[0] || "3000"
-    , env = args[1] || "dev";
-  var node = spawn("node", ["app.js", port, env]);
+    , env = args[1] || "dev"
+    , node = spawn("node", ["app.js", port, env]);
   process.stdout.write("Jelly worker (pid " + node.pid +
       ") running at port " + port + " (" + env + ")\n")
   node.stdout.on("data", function(data) {
@@ -277,7 +277,8 @@ function create_app(app_path) {
     // TODO -- make db stuff
     // schema.json ? + /db/migrations/
     mkdir(app_path + "/log", function() {
-      write(app_path + "/log/access.log", ""); // TODO -- write to this!
+      // TODO -- write connect log to this?
+      write(app_path + "/log/access.log", "");
     });
     mkdir(app_path + "/public", function() {
       //write(app_path + "/public/404.html", four04);
