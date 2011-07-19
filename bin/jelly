@@ -77,7 +77,7 @@ var index_html = [
 var css = [
     "html {overflow-y: scroll}"
   , "body {font-family: Verdana, 'Times New Roman'}"
-  , "#routes th, #routes td {border: 1px solid black; text-align: center; padding: 10px}"
+  , "#routes th, #routes td {border: 1px solid black; text-align: center; padding: 5px 10px}"
 ].join("\n");
 
 // TODO -- logger('dev') should work...
@@ -125,7 +125,7 @@ var gen_controller = function(controller_name, actions) {
         switch (template_engine) {
 //case "jade":
         default:
-          var view_filename = "app/views/" + controller_name + '/' + val + ".jade";
+          var view_filename = "app/views/" + controller_name + '/' + val + ".html.jade";
           write(view_filename, "h2 " + controller_name + '#' + val +
               "\np Edit this file (" + view_filename + ").");
           break;
