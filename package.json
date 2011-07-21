@@ -1,5 +1,5 @@
 {
-  "author": "TJ Koblentz <me@tjk.me> (http://tjk.me)",
+  "author": "TJ Koblentz <tj.koblentz@gmail.com> (http://tjk.me)",
   "name": "Jelly",
   "description": "A web framework for Node based on Ruby on Rails.",
   "version": "0.0.3",
