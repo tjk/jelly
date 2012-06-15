@@ -1,19 +1,19 @@
 {
-  "author": "TJ Koblentz <tj.koblentz@gmail.com> (http://tjk.me)",
   "name": "Jelly",
-  "description": "A web framework for Node based on Ruby on Rails.",
-  "version": "0.0.3",
+  "description": "A web framework for Node inspired by Ruby on Rails.",
+  "version": "0.0.1",
+  "author": "TJ Koblentz <tj.koblentz@gmail.com> (http://tjk.me)",
+  "contributors": [
+    { "name": "TJ Koblentz", "email": "tj.koblentz@gmail.com" }
+  ],
   "homepage": "http://github.com/tjko/jelly",
   "repository": {
     "type": "git",
     "url": "git://github.com/tjko/Jelly.git"
   },
-  "main": "index.js",
-  "engines": {
-    "node": "~v0.4.8"
-  },
-  "dependencies": {
-    "connect": "~v1.5.1"
-  },
-  "devDependencies": {}
+  "main": "./index.js",
+  "engine": { "node": "0.6.18" },
+  "dependencies": { "fs.extra": "*" },
+  "devDependencies": {},
+  "bin": { "jelly": "./bin/jelly" }
 }

@@ -1,25 +1,26 @@
 #!/usr/bin/env node
 
 // do the following:
-// 1. export PATH=PATH_TO_JELLY/jelly:$PATH
+// 1. export PATH=PATH_TO_JELLY/bin:$PATH
 // AND either -
 // 2a. alias j=jelly (in .profile, .bash_profile, .bashrc, or appropriate) OR
 // 2b. ln jelly j
 
-var fs = require("fs")
-  , exec = require("child_process").exec
-  , spawn = require("child_process").spawn
-  , path = require("path");
+var fs = require("fs.extra");
+var exec = require("child_process").exec;
+var spawn = require("child_process").spawn;
+var path = require("path");
 
-var version = "0.0.1"
-  , app_path;
+/* current version -- should match package.json */
+var version = "0.0.1";
+// TODO handle when this becomes npm module
+var jellydir = __dirname.slice(0, -4);
 
 /* default engines */
-var template_engine = "jade"
-  , supported_template_engines = [ "jade" ]
-  , database_engine = "mongodb"
-  , supported_database_engines = [ "mongodb" ];
+var templating = new (require(jellydir + "/lib/templating/html").Html)();
+var datastore = new (require(jellydir + "/lib/datastore/memory").Memory)();
 
+/* jelly -h */
 var usage = [
     ""
   , "  Usage: jelly <command> [app_path] [options]"
@@ -37,21 +38,18 @@ var usage = [
   , ""
 ].join("\n");
 
-var readme = "*empty*" // TODO -- make something like Rails README
-  , robots = [
-      "# See http://www.robotstxt.org/wc/norobots.html for documentation on how to use the robots.txt file"
-    , "# To ban all spiders from the entire site uncomment the next two lines:"
-    , "# User-Agent: *"
-    , "# Disallow: /"
-  ].join("\n");
+/* app/README */
+var readme = "*empty*";
 
-var jade_layout = [
-    "!!! 5"
-  , "html"
-  , "  head"
-  , "    title= title"
-  , "    link(rel=\"stylesheet\", href=\"/stylesheets/style.css\")"
-  , "  body!= yield"
+/* app/Cakefile */
+var cakefile = "TODO";
+
+/* robots.txt */
+var robots = [
+    "# See http://www.robotstxt.org/wc/norobots.html for documentation on how to use the robots.txt file"
+  , "# To ban all spiders from the entire site uncomment the next two lines:"
+  , "# User-Agent: *"
+  , "# Disallow: /"
 ].join("\n");
 
 var index_html = [
@@ -74,9 +72,11 @@ var index_html = [
   , "</html>"
 ].join("\n");
 
+/* app/public/app.css */
 var css = [
     "html {overflow-y: scroll}"
   , "body {font-family: Verdana, 'Times New Roman'}"
+  , "code {background: #eee; border: 1px solid #e3e3e3}"
   , "#routes th, #routes td {border: 1px solid black; text-align: center; padding: 5px 10px}"
 ].join("\n");
 
@@ -97,41 +97,69 @@ var app = [
   , ""
 ].join("\n");
 
-var routes = "{\n}\n";
+/* app/config/routes.json */
+var routes = [
+    "{"
+  , "}"
+].join("\n");
+
+/* app/package.json */
+// TODO add jelly package to dependencies
+var packagejson = [
+    '{'
+  , '  "name": "_",'
+  , '  "description": "_",'
+  , '  "version": "0.0.0",'
+  , '  "author": "_",'
+  , '  "homepage": "_",'
+  , '  "repository": {},'
+  , '  "main": "index.js",'
+  , '  "engines": { "node": "0.6.18" },'
+  , '  "dependencies": { "connect": "2.3.3" }'
+  , '}'
+].join("\n");
 
 // TODO -- capitalize and append Controller to name?
 var gen_controller = function(controller_name, actions) {
   // TODO -- check we are in jelly app -- what makes a directory a jelly app?? (see: /Jelly\.conf/)
-  var controller_filename = "app/controllers/" + controller_name + ".js"
-    , content = [
+  var controller_filename = "app/controllers/" + controller_name + ".js";
+  var content = [
       "function " + controller_name + "() {"
     , ""
   ].join("\n");
+
   actions.forEach(function(val, index, arr) {
-    content += "  this." + val + " = function(res) {\n    return {\n      title: \"" +
-        controller_name + "#" + val + "\"\n    };\n  };\n";
+    content += [
+        "  this." + val + " = function(res) {"
+      , "    return {"
+      , '      title: "' + controller_name + "#" + val + '"'
+      , "    };"
+      , "  };"
+      , ""
+    ].join("\n");
   });
-  content += "}\n\nvar expose = new " + controller_name + "();\nexpose.__proto__ = app.base_controller;\nmodule.exports = expose;\n";
+
+  content += [
+      "}"
+    , ""
+    , "var expose = new " + controller_name + "();"
+    , "expose.__proto__ = app.base_controller;"
+    , "module.exports = expose;"
+    , ""
+  ].join("\n");
+
   // TODO -- jelly.controllers_dir not supported!!! binary versus jelly object...
-  var actions = actions.slice() // keep actions in scope
-  write(controller_filename, content, "This controller already exists. continue? ", function() {
+  var actions = actions.slice(); // keep actions in scope
+  write(controller_filename,
+    content, "This controller already exists. continue? ", function() {
     /* generate routes for next controller AND/OR actions */
     gen_routes(controller_name, actions);
     /* generate view folder and files */
     mkdir("app/views/" + controller_name, function() {
       actions.forEach(function(val, index, arr) {
-        // TODO -- need to get at app.options['template_engine'] or w/e !!!
-        // (maybe have Jelly.conf -- also show it's Jelly app?)
-        switch (template_engine) {
-//case "jade":
-        default:
-          var view_filename = "app/views/" + controller_name + '/' + val + ".html.jade";
-          write(view_filename, "h2 " + controller_name + '#' + val +
-              "\np Edit this file (" + view_filename + ").");
-          break;
-        }
-//default:
-//abort("Unsupported template engine.");
+        // TODO (maybe have Jelly.conf -- also show it's Jelly app?)
+        var path = "app/views/" + controller_name + '/' + val + templating.extension;
+        write(view_filename, templating.base_view(controller_name, val, path));
       });
     });
   });
@@ -149,8 +177,8 @@ var gen_routes = function(controller_name, actions) {
   write("config/routes.json", routes_string);
 };
 
-var args = process.argv.slice(2)
-  , cmd, generator, arg;
+var args = process.argv.slice(2);
+var cmd, generator, arg;
 
 if (args.length == 0) abort(usage);
 
@@ -174,10 +202,10 @@ while (args.length) {
     case "g":
       if (args.length) {
         /* examples:
-         *   generate model model_name attr_1:type_1 attr_2:type_2 ...
-         *   generate controller controller_name action_1 action_2 ...
-         *   generate view view_folder view_name_1 view_name_2 ...
-         *   generate migration migration_name attr_1 attr_2 ...
+         *   g[enerate] model model_name attr_1:type_1 attr_2:type_2 ...
+         *   g[enerate] controller controller_name action_1 action_2 ...
+         *   g[enerate] view view_folder view_name_1 view_name_2 ...
+         *   g[enerate] migration migration_name attr_1 attr_2 ...
          */
         generate(args.shift(), args);
         args.length = 0;
@@ -256,19 +284,32 @@ function new_app(app_path) {
   });
 }
 
+/* builds the application directory at app_path */
 function create_app(app_path) {
   mkdir(app_path, function() {
     write(app_path + "/README", readme);
+    mkdir(app_path + "/node_modules", function() {
+      mkdir(app_path + "/node_modules/jelly/lib", function() {
+        fs.copy(jellydir + "/index.js",
+          app_path + "/node_modules/jelly/index.js", function(err) {
+          if (err)
+            abort("Could not copy jelly index.js to app." + err);
+        });
+        // TODO show that these files are being copied (CREATE)?
+        fs.copyRecursive(jellydir + "/lib",
+          app_path + "/node_modules/jelly/lib", function(err) {
+          if (err)
+            abort("Could not copy jelly lib to app.");
+        });
+      });
+    });
     mkdir(app_path + "/app/controllers");
     mkdir(app_path + "/app/helpers");
     mkdir(app_path + "/app/models");
     mkdir(app_path + "/app/views", function() {
       mkdir(app_path + "/app/views/layouts", function() {
-        switch (template_engine) {
-        case "jade":
-          write(app_path + "/app/views/layouts/app.jade", jade_layout);
-          break;
-        }
+        write(app_path + "/app/views/layouts/app" + templating.extension,
+          templating.base_layout());
       });
     });
     mkdir(app_path + "/config", function() {
@@ -291,11 +332,8 @@ function create_app(app_path) {
         write(app_path + "/public/stylesheets/style.css", css);
       });
     });
-    // TODO -- put anything in node modules? -- ship with connect, jade, and default db engine?
-    mkdir(app_path + "/node_modules", function() {
-      // maybe exec npm in here -- do something about dependencies,
-      // unless package.json takes care of all this auto-magically
-    });
+    write(app_path + "/Cakefile", cakefile);
+    write(app_path + "/package.json", packagejson);
     write(app_path + "/app.js", app)
   });
 }
