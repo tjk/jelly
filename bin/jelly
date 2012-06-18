@@ -16,10 +16,13 @@ var version = "0.0.1";
 // TODO handle when this becomes npm module
 var jellydir = __dirname.slice(0, -4);
 
+/* required active_support */
+require(jellydir + "/lib/active_support/string");
+
 /* default engines */
 // TODO ensure render isn't called as it needs self.app to not be undefined
-var templating = new (require(jellydir + "/lib/templating/html").Html)();
-var datastore = new (require(jellydir + "/lib/datastore/memory").Memory)();
+var templating = new (require(jellydir + "/lib/components/templating/html").Html)();
+var datastore = new (require(jellydir + "/lib/components/datastore/memory").Memory)();
 
 /* jelly -h */
 var usage = [
@@ -84,7 +87,7 @@ var css = [
 // TODO -- logger('dev') should work...
 var app = [
     "var connect = require(\"connect\");"
-  , "var app = require(\"jelly\");"
+  , "app = require(\"jelly\"); /* ensure global scope */"
   , ""
   , "var port = process.argv[2] || \"3000\";"
   , "var env = process.argv[3] || \"dev\";"
@@ -122,19 +125,21 @@ var packagejson = [
 ].join("\n");
 
 // TODO -- capitalize and append Controller to name?
-var gen_controller = function(controller_name, actions) {
-  // TODO -- check we are in jelly app -- what makes a directory a jelly app?? (see: /Jelly\.conf/)
-  var controller_filename = "app/controllers/" + controller_name + ".js";
+// TODO lib/scripting (js + coffeescript)
+// TODO -- check we are in jelly app -- what makes a directory a jelly app?? (see: /Jelly\.conf/)
+var gen_controller = function(controller, actions) {
+  var controller_filename = "app/controllers/" + controller.underscorize() + "_controller.js";
   var content = [
-      "function " + controller_name + "() {"
+      "function " + controller.camelcase() + "Controller() {"
+    , "  var self = this;"
     , ""
   ].join("\n");
 
   actions.forEach(function(val, index, arr) {
     content += [
-        "  this." + val + " = function(res) {"
+        "  self." + val + " = function(res) {"
       , "    return {"
-      , '      title: "' + controller_name + "#" + val + '"'
+      , '      title: "' + controller.underscorize() + "#" + val + '"'
       , "    };"
       , "  };"
       , ""
@@ -144,10 +149,9 @@ var gen_controller = function(controller_name, actions) {
   content += [
       "}"
     , ""
-    , "var expose = new " + controller_name + "();"
-    , "expose.__proto__ = app.base_controller;"
-    , "module.exports = expose;"
-    , ""
+    , controller.camelcase() + "Controller.prototype = new app.application_controller(app);"
+    , controller.camelcase() + "Controller.prototype.constructor = " + controller.camelcase() + "Controller;"
+    , "module.exports = new " + controller.camelcase() + "Controller();"
   ].join("\n");
 
   // TODO -- jelly.controllers_dir not supported!!! binary versus jelly object...
@@ -155,24 +159,28 @@ var gen_controller = function(controller_name, actions) {
   write(controller_filename,
     content, "This controller already exists. continue? ", function() {
     /* generate routes for next controller AND/OR actions */
-    gen_routes(controller_name, actions);
+    gen_routes(controller, actions);
     /* generate view folder and files */
-    mkdir("app/views/" + controller_name, function() {
+    mkdir("app/views/" + controller, function() {
       actions.forEach(function(val, index, arr) {
         // TODO (maybe have Jelly.conf -- also show it's Jelly app?)
-        var path = "app/views/" + controller_name + '/' + val + templating.extension;
-        write(path, templating.base_view(controller_name, val, path));
+        var path = "app/views/" + controller + '/' + val + templating.extension;
+        write(path, templating.base_view(controller, val, path));
       });
     });
   });
 };
 
-var gen_routes = function(controller_name, actions) {
+var gen_routes = function(controller, actions) {
   var routes_json, routes_string, contents;
   contents = fs.readFileSync("config/routes.json");
   routes_json = JSON.parse(contents);
   actions.forEach(function(val, index, arr) {
-    routes_json['/' + controller_name + '/' + val] = controller_name + '#' + val;
+    // TODO improve
+    if (val === "index")
+      routes_json['/' + controller] = controller + '#' + val;
+    else
+      routes_json['/' + controller + '/' + val] = controller + '#' + val;
   });
   // error here some where
   routes_string = JSON.stringify(routes_json);

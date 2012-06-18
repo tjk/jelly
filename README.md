@@ -11,6 +11,25 @@ Getting started
     cd <where you want the Jelly source>
     git clone GIT_URL
 
+### Using npm
+
+Eventually should be as simple as:
+
+    npm install jelly
+
+Known Issues (to fix)
+---------------------
+
+* server crashes on controller generation
+* first load of html files crashes http.js write (not buffer or text)
+  * CHECK application controller line 23!!
+* use supervisor!
+* when using certain components, automatically add to node modules folder
+* instead of crap ton of command line args, read configuration from
+  .jelly file or something (also use that to check if cwd is jelly app)
+* so much code cleaning
+* efficiency!!!
+
 Upcoming
 --------
 
