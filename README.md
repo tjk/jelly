@@ -22,11 +22,13 @@ Known Issues (to fix)
 
 * server crashes on controller generation
 * first load of html files crashes http.js write (not buffer or text)
-  * CHECK application controller line 23!!
+  - CHECK application controller line 23!!
 * use supervisor!
 * when using certain components, automatically add to node modules folder
 * instead of crap ton of command line args, read configuration from
-  .jelly file or something (also use that to check if cwd is jelly app)
+    .jelly file or something (also use that to check if cwd is jelly app)
+  - create Component.js superclass, also add modules field (with names +
+      versions?)
 * so much code cleaning
 * efficiency!!!
 
