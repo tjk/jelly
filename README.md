@@ -10,8 +10,12 @@ Getting started
 
     cd <where you want the Jelly source>
     git clone GIT_URL
-    make
-    sudo make install
+
+Upcoming
+--------
+
+* Notifications system
+* Live updates + web sockets (publish + subscribe)
 
 License
 -------

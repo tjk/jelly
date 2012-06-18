@@ -17,6 +17,7 @@ var version = "0.0.1";
 var jellydir = __dirname.slice(0, -4);
 
 /* default engines */
+// TODO ensure render isn't called as it needs self.app to not be undefined
 var templating = new (require(jellydir + "/lib/templating/html").Html)();
 var datastore = new (require(jellydir + "/lib/datastore/memory").Memory)();
 
@@ -82,16 +83,17 @@ var css = [
 
 // TODO -- logger('dev') should work...
 var app = [
-    "var connect = require(\"connect\")"
-  , "  , port = process.argv[2] || \"3000\""
-  , "  , env = process.argv[3] || \"dev\""
-  , "  , log_param = (env == \"dev\") ? 'dev' : undefined;"
-  , "app = require(\"jelly\");"
+    "var connect = require(\"connect\");"
+  , "var app = require(\"jelly\");"
+  , ""
+  , "var port = process.argv[2] || \"3000\";"
+  , "var env = process.argv[3] || \"dev\";"
+  , "var log_param = (env == \"dev\") ? \"dev\" : undefined;"
   , ""
   , "app.bootstrap(__dirname, function () {"
   , "  connect("
-  , "    connect.logger(/* log_param */)"
-  , "  , app.router.setup()"
+  , "     connect.logger(/* log_param */),"
+  , "     app.router.setup()"
   , "  ).listen(port);"
   , "}, env);"
   , ""
@@ -159,7 +161,7 @@ var gen_controller = function(controller_name, actions) {
       actions.forEach(function(val, index, arr) {
         // TODO (maybe have Jelly.conf -- also show it's Jelly app?)
         var path = "app/views/" + controller_name + '/' + val + templating.extension;
-        write(view_filename, templating.base_view(controller_name, val, path));
+        write(path, templating.base_view(controller_name, val, path));
       });
     });
   });
@@ -288,21 +290,7 @@ function new_app(app_path) {
 function create_app(app_path) {
   mkdir(app_path, function() {
     write(app_path + "/README", readme);
-    mkdir(app_path + "/node_modules", function() {
-      mkdir(app_path + "/node_modules/jelly/lib", function() {
-        fs.copy(jellydir + "/index.js",
-          app_path + "/node_modules/jelly/index.js", function(err) {
-          if (err)
-            abort("Could not copy jelly index.js to app." + err);
-        });
-        // TODO show that these files are being copied (CREATE)?
-        fs.copyRecursive(jellydir + "/lib",
-          app_path + "/node_modules/jelly/lib", function(err) {
-          if (err)
-            abort("Could not copy jelly lib to app.");
-        });
-      });
-    });
+    mkdir(app_path + "/node_modules");
     mkdir(app_path + "/app/controllers");
     mkdir(app_path + "/app/helpers");
     mkdir(app_path + "/app/models");
@@ -335,6 +323,10 @@ function create_app(app_path) {
     write(app_path + "/Cakefile", cakefile);
     write(app_path + "/package.json", packagejson);
     write(app_path + "/app.js", app)
+    // finally, cd in and *bundle*
+    exec("cd " + app_path + " && npm install -d", function(err) {
+      if (err) throw err;
+    });
   });
 }
 
